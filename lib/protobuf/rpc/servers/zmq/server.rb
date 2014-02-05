@@ -33,6 +33,10 @@ module Protobuf
           @total_workers = total_workers + 1
         end
 
+        def all_workers_busy?
+          workers.all?(&:busy?)
+        end
+
         def backend_port
           options[:worker_port] || frontend_port + 1
         end
@@ -97,6 +101,10 @@ module Protobuf
 
         def brokerless?
           !!options[:workers_only]
+        end
+
+        def busy_worker_count
+          workers.count(&:busy)
         end
 
         def frontend_ip
@@ -236,7 +244,17 @@ module Protobuf
               start_missing_workers
             end
 
-            broadcast_heartbeat if broadcast_heartbeat?
+            if broadcast_heartbeat?
+              if all_workers_busy?
+                # If it is time to broadcast a heartbeat and all our
+                # workers are busy, broadcast a flatline so that clients
+                # will know not to send requests to us until we can recover
+                broadcast_flatline
+              else
+                broadcast_heartbeat
+              end
+            end
+
           end
         end
 
