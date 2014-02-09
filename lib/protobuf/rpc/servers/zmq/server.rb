@@ -34,7 +34,7 @@ module Protobuf
         end
 
         def all_workers_busy?
-          workers.all?(&:busy?)
+          workers.all? { |thread| !!thread.thread_variable_get(:busy) }
         end
 
         def backend_port
@@ -104,7 +104,7 @@ module Protobuf
         end
 
         def busy_worker_count
-          workers.count(&:busy)
+          workers.all? { |thread| !!thread.thread_variable_get(:busy) }
         end
 
         def frontend_ip

@@ -24,10 +24,6 @@ module Protobuf
         ##
         # Instance Methods
         #
-        def busy?
-          !!@busy
-        end
-
         def process_request
           @client_address, _, @request_data = read_from_backend
 
@@ -55,10 +51,10 @@ module Protobuf
             break if rc == -1
 
             if rc > 0
-              @busy = true
+              ::Thread.current.thread_variable_set(:busy, true)
               initialize_request!
               process_request
-              @busy = false
+              ::Thread.current.thread_variable_set(:busy, false)
             end
           end
         ensure
